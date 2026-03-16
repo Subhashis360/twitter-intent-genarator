@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>X Intent Generator • Premium</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+    
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .logo-font { font-family: 'Space Grotesk', sans-serif; }
+    
+    .card-hover { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .card-hover:hover { transform: translateY(-6px); box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5); }
+    
+    .input-focus:focus { box-shadow: 0 0 0 4px rgba(234,179,8,0.3); outline: none; }
+    
+    .toast { animation: slideIn 0.4s ease-out; }
+    @keyframes slideIn { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  </style>
+</head>
+<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+  <!-- Header -->
+  <header class="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 bg-yellow-400 rounded-xl flex items-center justify-center">
+          <i class="fa-brands fa-x-twitter text-2xl text-black"></i>
+        </div>
+        <span class="logo-font text-4xl font-bold tracking-tight text-white">X Intent</span>
+      </div>
+      <a href="https://x.com" target="_blank" class="px-6 py-3 bg-yellow-400 text-black font-semibold rounded-full hover:bg-yellow-300 transition">
+        Open X
+      </a>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-12">
+    <div class="text-center mb-16">
+      <h1 class="logo-font text-6xl md:text-7xl font-bold tracking-tighter text-white mb-4">
+        Generate X Intents
+      </h1>
+      <p class="text-xl text-zinc-400 max-w-2xl mx-auto">
+        Paste any X post link → Get like, repost, reply, quote, follow links instantly
+      </p>
+    </div>
+
+    <!-- Input Section -->
+    <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-10 shadow-2xl mb-12">
+      <label class="block text-lg font-medium text-zinc-300 mb-4">X Post URL</label>
+      <div class="relative flex flex-col sm:flex-row gap-4">
+        <input 
+          id="urlInput" 
+          type="text" 
+          placeholder="https://x.com/username/status/1234567890123456789 or https://x.com/i/status/..."
+          class="input-focus flex-1 bg-zinc-950 border border-zinc-700 rounded-3xl px-8 py-6 text-lg placeholder-zinc-500 focus:border-yellow-400"
+        />
+        <button 
+          onclick="generate()"
+          class="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold px-10 py-6 rounded-3xl flex items-center justify-center gap-3 transition"
+        >
+          <i class="fa-solid fa-bolt"></i> Generate
+        </button>
+      </div>
+
+      <!-- Manual username fallback -->
+      <div id="usernameSection" class="hidden mt-6">
+        <label class="block text-sm font-medium text-zinc-400 mb-3">Author @username (for Follow intent)</label>
+        <input 
+          id="manualUsername" 
+          type="text" 
+          placeholder="@username"
+          class="w-full bg-zinc-950 border border-zinc-700 rounded-3xl px-6 py-5 text-lg focus:border-yellow-400 outline-none"
+          oninput="updateFollowIntent()"
+        />
+      </div>
+    </div>
+
+    <!-- Tweet Preview -->
+    <div id="previewSection" class="hidden mb-16">
+      <h2 class="text-3xl font-semibold mb-6 text-center">Current Post Preview</h2>
+      <div class="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 max-w-3xl mx-auto">
+        <div class="flex items-center gap-4 mb-5">
+          <div class="w-12 h-12 bg-zinc-700 rounded-full flex items-center justify-center">
+            <i class="fa-solid fa-user text-2xl text-zinc-400"></i>
+          </div>
+          <div>
+            <div id="previewUsername" class="font-bold text-lg">@username</div>
+            <div class="text-sm text-zinc-500">Tweet ID: <span id="previewId"></span></div>
+          </div>
+        </div>
+        <div class="text-lg mb-6" id="previewText">
+          This is a placeholder for the tweet text content...
+        </div>
+        <!-- Image placeholder - in real app you'd fetch media -->
+        <div id="previewImage" class="hidden rounded-2xl overflow-hidden border border-zinc-700 mb-6">
+          <img src="https://via.placeholder.com/600x400/111/eee?text=Tweet+Image" alt="Tweet media" class="w-full h-auto" />
+        </div>
+        <div class="text-sm text-zinc-500 italic">
+          (Note: Real text & image require X API access — this is client-side demo)
+        </div>
+      </div>
+    </div>
+
+    <!-- Intents Grid -->
+    <div id="intentsSection" class="hidden">
+      <h2 class="text-4xl font-semibold tracking-tight text-center mb-10">All Intents</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="intentsGrid"></div>
+    </div>
+  </main>
+
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-8 right-8 bg-zinc-900 border border-yellow-500 text-yellow-400 px-8 py-5 rounded-3xl shadow-2xl flex items-center gap-4 toast z-50">
+    <i class="fa-solid fa-check-circle text-2xl"></i>
+    <span id="toastMsg" class="font-medium">Copied!</span>
+  </div>
+
+  <script>
+    let currentId = null;
+    let currentUsername = null;
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      t.classList.remove('hidden');
+      setTimeout(() => t.classList.add('hidden'), 2800);
+    }
+
+    function copy(text) {
+      navigator.clipboard.writeText(text).then(() => showToast("Intent URL copied!"));
+    }
+
+    function parseUrl(urlStr) {
+      try {
+        const url = new URL(urlStr.trim().startsWith('http') ? urlStr : 'https://' + urlStr);
+        const parts = url.pathname.split('/').filter(Boolean);
+
+        let id = null;
+        let user = null;
+
+        const statusIdx = parts.indexOf('status');
+        if (statusIdx !== -1 && statusIdx + 1 < parts.length) {
+          const possibleId = parts[statusIdx + 1];
+          if (/^\d{10,20}$/.test(possibleId)) id = possibleId;
+        }
+
+        // Username before status
+        if (statusIdx > 0) {
+          const candidate = parts[statusIdx - 1];
+          if (candidate !== 'i' && !/^\d+$/.test(candidate)) {
+            user = candidate.replace(/^@/, '');
+          }
+        }
+
+        // Fallback for /i/status/
+        if (!id) {
+          const iStatusIdx = parts.indexOf('i');
+          if (iStatusIdx !== -1 && parts[iStatusIdx + 1] === 'status' && iStatusIdx + 2 < parts.length) {
+            const possibleId = parts[iStatusIdx + 2];
+            if (/^\d{10,20}$/.test(possibleId)) id = possibleId;
+          }
+        }
+
+        return { id, username: user };
+      } catch {
+        return { id: null, username: null };
+      }
+    }
+
+    function generate() {
+      const input = document.getElementById('urlInput').value.trim();
+      if (!input) return alert("Paste a valid X / Twitter URL");
+
+      const { id, username } = parseUrl(input);
+      if (!id) return alert("Couldn't find tweet ID in the URL.\nExample: https://x.com/i/status/2033406454355624046");
+
+      currentId = id;
+      currentUsername = username;
+
+      // Show parsed info
+      document.getElementById('previewId').textContent = id;
+      document.getElementById('previewUsername').textContent = username ? `@${username}` : "@username (not detected)";
+      document.getElementById('previewSection').classList.remove('hidden');
+
+      // Username handling
+      if (username) {
+        document.getElementById('usernameSection').classList.add('hidden');
+      } else {
+        document.getElementById('usernameSection').classList.remove('hidden');
+      }
+
+      // Build intents
+      buildIntents();
+      document.getElementById('intentsSection').classList.remove('hidden');
+    }
+
+    function updateFollowIntent() {
+      if (!currentId) return;
+      const manual = document.getElementById('manualUsername').value.trim().replace(/^@/, '');
+      currentUsername = manual || null;
+      buildIntents(); // refresh only follow
+    }
+
+    function buildIntents() {
+      const grid = document.getElementById('intentsGrid');
+      grid.innerHTML = '';
+
+      const permalink = currentUsername 
+        ? `https://x.com/${currentUsername}/status/${currentId}`
+        : `https://x.com/i/status/${currentId}`;
+
+      const intents = [
+        { title: "Like", icon: "❤️", color: "rose", url: `https://twitter.com/intent/like?tweet_id=${currentId}`, desc: "Like this post" },
+        { title: "Repost", icon: "🔁", color: "emerald", url: `https://twitter.com/intent/retweet?tweet_id=${currentId}`, desc: "Repost / Retweet" },
+        { title: "Reply", icon: "💬", color: "sky", url: `https://twitter.com/intent/tweet?in_reply_to=${currentId}`, desc: "Reply to post" },
+        { title: "Quote", icon: "📢", color: "amber", url: `https://twitter.com/intent/tweet?text=&url=${encodeURIComponent(permalink)}`, desc: "Quote this post" },
+        { title: "Follow Author", icon: "👤", color: "violet", 
+          url: currentUsername ? `https://twitter.com/intent/user?screen_name=${currentUsername}` : null, 
+          desc: currentUsername ? `Follow @${currentUsername}` : "Need username" },
+        { title: "Share Link", icon: "🔗", color: "teal", url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(permalink)}`, desc: "New post with link" }
+      ];
+
+      intents.forEach(i => {
+        const disabled = !i.url;
+        const card = `
+          <div class="card-hover bg-zinc-900 border border-zinc-800 rounded-3xl overflow-hidden">
+            <div class="p-8">
+              <div class="flex items-center gap-4 mb-6">
+                <div class="w-14 h-14 bg-zinc-800 rounded-2xl flex items-center justify-center text-3xl">${i.icon}</div>
+                <div>
+                  <h3 class="text-xl font-semibold">${i.title}</h3>
+                  <p class="text-sm text-zinc-400">${i.desc}</p>
+                </div>
+              </div>
+              <div class="bg-zinc-950 border border-zinc-700 rounded-2xl p-5 mb-6 font-mono text-sm break-all ${disabled ? 'text-red-400' : 'text-yellow-400/90'}">
+                ${disabled ? 'Username required for Follow' : i.url}
+              </div>
+              <div class="flex gap-4">
+                ${disabled ? `
+                  <div class="flex-1 bg-zinc-800 border border-red-500/30 text-red-400 text-center py-5 rounded-3xl font-medium cursor-not-allowed">
+                    Disabled
+                  </div>
+                ` : `
+                  <a href="${i.url}" target="_blank" class="flex-1 bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-center py-5 rounded-3xl font-medium flex items-center justify-center gap-3 transition">
+                    <i class="fa-solid fa-arrow-up-right-from-square"></i> Open
+                  </a>
+                `}
+                ${!disabled ? `
+                  <button onclick="copy('${i.url}')" class="w-14 h-14 bg-yellow-400 hover:bg-yellow-300 text-black rounded-3xl flex items-center justify-center transition active:scale-95">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+        grid.innerHTML += card;
+      });
+    }
+
+    // Enter key support
+    document.getElementById('urlInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') generate();
+    });
+  </script>
+</body>
+</html>
